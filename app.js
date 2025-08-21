@@ -548,19 +548,20 @@ $("#workForm").addEventListener("submit", async (e) => {
   const type = clothType.value;
   const q = Number(qty.value);
   const rate = Number(em.rates[type] || 0);
-  const amt = rate * q;
+  const amt = q * rate;
   await loadWork();
-  // Check for existing entry
+  // Only update if billNo, type, employee, and rate are all the same
   let existing = work.find(
     (wi) =>
       wi.employeeId === em.id &&
       wi.billNo.toLowerCase() === b.toLowerCase() &&
-      wi.type === type
+      wi.type === type &&
+      wi.rate === rate
   );
   if (existing) {
     // Update quantity and amount
     const newQty = Number(existing.qty) + q;
-    const newAmt = rate * newQty;
+    const newAmt = newQty * rate;
     await db.collection("work").doc(existing.id).update({
       qty: newQty,
       amount: newAmt,
