@@ -1,0 +1,15 @@
+/* Extra custom CSS (optional) */
+body {
+  font-family: "Inter", sans-serif;
+}
+
+/* Ensure main container is centered and responsive */
+.max-w-6xl {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive tab navigation */
+nav.grid {
+  overflow-x: auto;
+}

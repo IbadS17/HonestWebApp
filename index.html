@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Honest Fashion – Admin & Employee</title>
+    <!-- Tailwind CDN for demo; for production, compile Tailwind locally. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#111827",
+              accent: "#14b8a6",
+            },
+            borderRadius: {
+              "2xl": "1rem",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900">
+    <!-- Toast Notification -->
+    <div
+      id="toast"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-lg bg-gray-900 text-white text-sm font-medium opacity-0 pointer-events-none transition-all duration-300"
+    ></div>
+    <!-- App Shell -->
+    <div class="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col">
+      <!-- LOGIN VIEW -->
+      <section id="loginView" class="max-w-md mx-auto mt-10">
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <h1 class="text-3xl font-extrabold text-center mb-6">
+            Honest Fashion
+          </h1>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Username</label>
+              <input
+                id="loginUsername"
+                class="w-full border border-gray-300 rounded-2xl px-4 py-3"
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">Password</label>
+              <input
+                id="loginPassword"
+                type="password"
+                class="w-full border border-gray-300 rounded-2xl px-4 py-3"
+                placeholder="Enter password"
+              />
+            </div>
+            <button
+              id="loginBtn"
+              class="w-full bg-accent text-white font-semibold rounded-2xl py-3 active:opacity-90 hover:bg-accent/90"
+            >
+              Login
+            </button>
+            <p class="text-xs text-gray-500 text-center">
+              Default Admin:
+              <span class="font-semibold">ibads66585 / ap874658</span>
+            </p>
+            <p
+              id="loginError"
+              class="text-center text-sm text-red-600 hidden"
+            ></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMIN VIEW -->
+      <section id="adminView" class="hidden">
+        <header
+          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4"
+        >
+          <h2 class="text-2xl font-bold">Admin Dashboard</h2>
+          <div class="flex items-center gap-2">
+            <input
+              id="globalSearch"
+              class="border border-gray-300 rounded-2xl px-4 py-2 w-64"
+              placeholder="Search employees or bill numbers"
+            />
+            <button
+              id="logoutAdmin"
+              class="bg-gray-900 text-white rounded-2xl px-4 py-2"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <nav class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 overflow-x-auto">
+          <button
+            data-tab="emp"
+            class="tab-btn bg-white border rounded-2xl py-2 px-3 text-sm font-medium shadow-sm hover:bg-accent/90 hover:text-white transition"
+          >
+            Employee Management
+          </button>
+          <button
+            data-tab="rate"
+            class="tab-btn bg-white border rounded-2xl py-2 px-3 text-sm font-medium shadow-sm hover:bg-accent/90 hover:text-white transition"
+          >
+            Rate Management
+          </button>
+          <button
+            data-tab="overview"
+            class="tab-btn bg-white border rounded-2xl py-2 px-3 text-sm font-medium shadow-sm hover:bg-accent/90 hover:text-white transition"
+          >
+            Work Overview
+          </button>
+          <button
+            data-tab="search"
+            class="tab-btn bg-white border rounded-2xl py-2 px-3 text-sm font-medium shadow-sm hover:bg-accent/90 hover:text-white transition"
+          >
+            Global Search
+          </button>
+        </nav>
+
+        <!-- TABS -->
+        <div class="mt-5 space-y-6">
+          <!-- Employee Management -->
+          <div id="tab-emp" class="tab-panel">
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+              <h3 class="text-lg font-semibold mb-3">Add / Edit Employee</h3>
+              <form id="empForm" class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">Name</label>
+                  <input
+                    id="empName"
+                    class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                    placeholder="Employee name"
+                    required
+                  />
+                </div>
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1">
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Username</label
+                    >
+                    <input
+                      id="empUsername"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      placeholder="auto"
+                    />
+                  </div>
+                  <div class="flex-1">
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Password</label
+                    >
+                    <input
+                      id="empPassword"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      placeholder="auto"
+                    />
+                  </div>
+                  <button
+                    id="genCreds"
+                    type="button"
+                    class="shrink-0 bg-gray-100 border rounded-2xl px-3 py-2"
+                  >
+                    Generate
+                  </button>
+                </div>
+
+                <div
+                  class="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3"
+                >
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Shirt Rate</label
+                    >
+                    <input
+                      id="rateShirt"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      value="0"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Pant Rate</label
+                    >
+                    <input
+                      id="ratePant"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      value="0"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Kurta Rate</label
+                    >
+                    <input
+                      id="rateKurta"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      value="0"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Pajama Rate</label
+                    >
+                    <input
+                      id="ratePajama"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                      value="0"
+                    />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2 flex gap-2">
+                  <button class="bg-accent text-white rounded-2xl px-4 py-2">
+                    Save Employee
+                  </button>
+                  <button
+                    id="resetEmpForm"
+                    type="button"
+                    class="bg-gray-200 rounded-2xl px-4 py-2"
+                  >
+                    Reset
+                  </button>
+                  <input type="hidden" id="editingEmpId" />
+                </div>
+              </form>
+            </div>
+
+            <div class="bg-white rounded-2xl p-4 shadow-sm mt-4">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-semibold">Employees</h3>
+                <input
+                  id="empListSearch"
+                  placeholder="Search name/username"
+                  class="border border-gray-300 rounded-2xl px-3 py-2 w-64"
+                />
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="text-left p-2">Name</th>
+                      <th class="text-left p-2">Username</th>
+                      <th class="text-left p-2">Rates (S/P/K/Pa)</th>
+                      <th class="text-left p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="empTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rate Management -->
+          <div id="tab-rate" class="tab-panel hidden">
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+              <h3 class="text-lg font-semibold mb-3">
+                Update Rates Per Employee
+              </h3>
+              <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div class="flex-1">
+                  <label class="block text-sm text-gray-600 mb-1"
+                    >Select Employee</label
+                  >
+                  <select
+                    id="rateEmpSelect"
+                    class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                  ></select>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1">
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Shirt</label
+                    >
+                    <input
+                      id="rmShirt"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1">Pant</label>
+                    <input
+                      id="rmPant"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Kurta</label
+                    >
+                    <input
+                      id="rmKurta"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1"
+                      >Pajama</label
+                    >
+                    <input
+                      id="rmPajama"
+                      type="number"
+                      min="0"
+                      class="w-full border border-gray-300 rounded-2xl px-3 py-2"
+                    />
+                  </div>
+                </div>
+                <button
+                  id="applyRates"
+                  class="bg-accent text-white rounded-2xl px-4 py-2"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Work Overview -->
+          <div id="tab-overview" class="tab-panel hidden">
+            <div class="bg-white rounded-2xl p-4 shadow-sm">
+              <div
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3"
+              >
+                <h3 class="text-lg font-semibold">All Work Records</h3>
+                <div class="flex gap-2">
+                  <input
+                    id="woFilter"
+                    placeholder="Filter by name/bill/type"
+                    class="border border-gray-300 rounded-2xl px-3 py-2 w-64"
+                  />
+                  <button
+                    id="clearWO"
+                    class="bg-gray-200 rounded-2xl px-3 py-2"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-100">
+                    <tr>
+                      <th class="text-left p-2">Date</th>
+                      <th class="text-left p-2">Employee</th>
+                      <th class="text-left p-2">Bill No.</th>
+                      <th class="text-left p-2">Type</th>
+                      <th class="text-right p-2">Qty</th>
+                      <th class="text-right p-2">Rate</th>
+                      <th class="text-right p-2">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="woTableBody"></tbody>
+                  <tfoot class="bg-gray-50">
+                    <tr>
+                      <td colspan="6" class="text-right p-2 font-semibold">
+                        Total
+                      </td>
+                      <td id="woTotal" class="text-right p-2 font-bold">0</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Search -->
+          <div id="tab-search" class="tab-panel hidden">
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <h3 class="text-lg font-semibold mb-2">Employees</h3>
+                <ul id="searchEmpList" class="space-y-2 text-sm"></ul>
+              </div>
+              <div class="bg-white rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-lg font-semibold">Bill Numbers</h3>
+                  <button
+                    id="clearEmpFilter"
+                    class="text-xs text-gray-600 border rounded-2xl px-2 py-1"
+                  >
+                    Show All
+                  </button>
+                </div>
+                <div class="flex gap-2 mb-2 items-center">
+                  <label
+                    for="dateFilter"
+                    class="text-sm text-gray-700 font-medium flex items-center gap-1"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 inline-block text-accent"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    id="dateFilter"
+                    class="border border-accent focus:ring-accent focus:border-accent rounded-2xl px-2 py-1 text-sm transition"
+                  />
+                  <label
+                    for="weekFilter"
+                    class="text-sm text-gray-700 font-medium ml-2"
+                    >Week</label
+                  >
+                  <select
+                    id="weekFilter"
+                    class="border border-accent focus:ring-accent focus:border-accent rounded-2xl px-2 py-1 text-sm transition"
+                  >
+                    <option value="">All Weeks</option>
+                  </select>
+                  <button
+                    id="showEarnings"
+                    class="bg-accent text-white rounded-2xl px-4 py-1 text-sm ml-2 shadow hover:bg-accent/90 transition"
+                  >
+                    Show Earnings
+                  </button>
+                </div>
+                <div id="earningsTable" class="mt-2"></div>
+                <ul id="searchWorkList" class="space-y-2 text-sm"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EMPLOYEE VIEW -->
+      <section id="employeeView" class="hidden">
+        <header
+          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4"
+        >
+          <h2 class="text-2xl font-bold">Employee Panel</h2>
+          <div class="flex items-center gap-2">
+            <span id="empWelcome" class="text-sm text-gray-600"></span>
+            <button
+              id="logoutEmp"
+              class="bg-gray-900 text-white rounded-2xl px-4 py-2"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <div class="mt-5 grid lg:grid-cols-2 gap-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm">
+            <h3 class="text-lg font-semibold mb-3">Work Entry</h3>
+            <form id="workForm" class="space-y-3">
+              <div>
+                <label class="block text-sm text-gray-600 mb-1"
+                  >Bill Number</label
+                >
+                <input
+                  id="billNo"
+                  class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                  placeholder="e.g., B12345"
+                  required
+                />
+                <p id="billWarn" class="text-xs text-red-600 hidden mt-1">
+                  Bill number already exists for you.
+                </p>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1"
+                  >Clothing Type</label
+                >
+                <select
+                  id="clothType"
+                  class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                >
+                  <option>Shirt</option>
+                  <option>Pant</option>
+                  <option>Kurta</option>
+                  <option>Pajama</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-600 mb-1">Quantity</label>
+                <input
+                  id="qty"
+                  type="number"
+                  min="1"
+                  value="1"
+                  class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                />
+              </div>
+              <div
+                class="flex items-center justify-between text-sm bg-gray-50 rounded-2xl px-4 py-2"
+              >
+                <span>Rate: <b id="liveRate">0</b></span>
+                <span>Amount: <b id="liveAmount">0</b></span>
+              </div>
+              <button class="w-full bg-accent text-white rounded-2xl py-2">
+                Submit Work
+              </button>
+            </form>
+          </div>
+
+          <div class="bg-white rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold">Work History (This Week)</h3>
+              <button
+                id="refreshHistory"
+                class="bg-gray-200 rounded-2xl px-3 py-1 text-sm"
+              >
+                Refresh
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="text-left p-2">Date</th>
+                    <th class="text-left p-2">Bill</th>
+                    <th class="text-left p-2">Type</th>
+                    <th class="text-right p-2">Qty</th>
+                    <th class="text-right p-2">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="histTableBody"></tbody>
+                <tfoot class="bg-gray-50">
+                  <tr>
+                    <td colspan="4" class="text-right p-2 font-semibold">
+                      Weekly Total
+                    </td>
+                    <td id="histTotal" class="text-right p-2 font-bold">0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+  <script src="app.js"></script>
+</html>
