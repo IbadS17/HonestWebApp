@@ -535,13 +535,8 @@ function updateLive() {
 clothType.addEventListener("change", updateLive);
 qty.addEventListener("input", updateLive);
 billNo.addEventListener("input", async () => {
-  await loadWork();
-  const exists = work.some(
-    (wi) =>
-      wi.employeeId === auth?.employeeId &&
-      wi.billNo.toLowerCase() === billNo.value.trim().toLowerCase()
-  );
-  billWarn.classList.toggle("hidden", !exists);
+  // No uniqueness check needed for bill number
+  billWarn.classList.add("hidden");
 });
 
 $("#workForm").addEventListener("submit", async (e) => {
@@ -549,33 +544,47 @@ $("#workForm").addEventListener("submit", async (e) => {
   const em = currentEmployee();
   if (!em) return;
   const b = billNo.value.trim();
-  if (!b) return alert("Bill number required");
-  await loadWork();
-  if (
-    work.some(
-      (wi) =>
-        wi.employeeId === em.id && wi.billNo.toLowerCase() === b.toLowerCase()
-    )
-  )
-    return alert("Bill number already exists for you");
+  if (!b) return showToast("Bill number required", "error");
   const type = clothType.value;
-  const q = Number(qty.value || 0);
+  const q = Number(qty.value);
   const rate = Number(em.rates[type] || 0);
-  const amount = rate * q;
-  await saveWork({
-    employeeId: em.id,
-    billNo: b,
-    type,
-    qty: q,
-    amount,
-    createdAt: Date.now(),
-  });
+  const amt = rate * q;
+  await loadWork();
+  // Check for existing entry
+  let existing = work.find(
+    (wi) =>
+      wi.employeeId === em.id &&
+      wi.billNo.toLowerCase() === b.toLowerCase() &&
+      wi.type === type
+  );
+  if (existing) {
+    // Update quantity and amount
+    const newQty = Number(existing.qty) + q;
+    const newAmt = rate * newQty;
+    await db.collection("work").doc(existing.id).update({
+      qty: newQty,
+      amount: newAmt,
+      createdAt: Date.now(),
+    });
+    showToast("Updated existing entry!", "success");
+  } else {
+    // Add new entry
+    await db.collection("work").add({
+      employeeId: em.id,
+      billNo: b,
+      type,
+      qty: q,
+      rate,
+      amount: amt,
+      createdAt: Date.now(),
+    });
+    showToast("Work submitted!", "success");
+  }
   billNo.value = "";
   qty.value = 1;
   updateLive();
   renderHistory();
   renderWorkOverview();
-  alert("Work submitted!");
 });
 
 $("#refreshHistory").addEventListener("click", renderHistory);
