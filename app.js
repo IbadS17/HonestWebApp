@@ -63,9 +63,36 @@ let auth = JSON.parse(localStorage.getItem("hf:auth")) || null; // persist auth
 
 // -------- App Init --------
 async function initApp() {
-  await loadEmployees();
-  await loadWork();
-  render();
+  try {
+    // Show loading view initially
+    const loadingView = $("#loadingView");
+    const appShell = $("#appShell");
+
+    // Load data first
+    await loadEmployees();
+    await loadWork();
+
+    // Hide loading and show app
+    if (loadingView) loadingView.style.display = "none";
+    if (appShell) appShell.classList.remove("hidden");
+
+    render();
+  } catch (error) {
+    console.error("App initialization error:", error);
+    showToast(
+      "Failed to load app data. Please check Firebase configuration.",
+      "error"
+    );
+
+    // Hide loading and show app even if error occurs
+    const loadingView = $("#loadingView");
+    const appShell = $("#appShell");
+    if (loadingView) loadingView.style.display = "none";
+    if (appShell) appShell.classList.remove("hidden");
+
+    // Show login view if there's an error
+    render();
+  }
 }
 
 // -------- DB Functions --------

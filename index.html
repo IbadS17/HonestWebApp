@@ -33,10 +33,27 @@
       id="toast"
       class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-lg bg-gray-900 text-white text-sm font-medium opacity-0 pointer-events-none transition-all duration-300"
     ></div>
+
+    <!-- Loading Spinner -->
+    <div
+      id="loadingView"
+      class="fixed inset-0 bg-gray-50 flex items-center justify-center z-50"
+    >
+      <div class="text-center">
+        <div
+          class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"
+        ></div>
+        <p class="text-gray-600">Loading...</p>
+      </div>
+    </div>
+
     <!-- App Shell -->
-    <div class="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col">
+    <div
+      id="appShell"
+      class="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col hidden"
+    >
       <!-- LOGIN VIEW -->
-      <section id="loginView" class="max-w-md mx-auto mt-10">
+      <section id="loginView" class="max-w-md mx-auto mt-10 hidden">
         <div class="bg-white rounded-2xl shadow-sm p-6">
           <h1 class="text-3xl font-extrabold text-center mb-6">
             Honest Fashion

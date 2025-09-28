@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Employees collection - validate data structure
+    match /employees/{employeeId} {
+      allow read: if true;
+      allow create, update: if validateEmployee(request.resource.data);
+      allow delete: if true;
+    }
+    
+    // Work collection - validate data structure  
+    match /work/{workId} {
+      allow read: if true;
+      allow create, update: if validateWork(request.resource.data);
+      allow delete: if true;
+    }
+    
+    // Helper functions to validate data
+    function validateEmployee(employee) {
+      return employee.keys().hasAll(['name', 'username', 'rates']) &&
+             employee.name is string &&
+             employee.username is string &&
+             employee.rates is map;
+    }
+    
+    function validateWork(work) {
+      return work.keys().hasAll(['employeeId', 'billNo', 'type', 'qty', 'rate', 'amount', 'createdAt']) &&
+             work.employeeId is string &&
+             work.billNo is string &&
+             work.type is string &&
+             work.qty is number &&
+             work.rate is number &&
+             work.amount is number &&
+             work.createdAt is number;
+    }
+  }
+}
