@@ -397,6 +397,33 @@
                   </tfoot>
                 </table>
               </div>
+              <div
+                id="woPager"
+                class="flex items-center justify-between mt-3 text-sm"
+              >
+                <div>
+                  <button
+                    id="woPrev"
+                    class="px-3 py-1 rounded-2xl border bg-white disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    id="woNext"
+                    class="px-3 py-1 rounded-2xl border bg-white disabled:opacity-40 ml-1"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="woPageInfo" class="text-gray-600"></span>
+                  <select id="woPageSize" class="border rounded-2xl px-2 py-1">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -463,6 +490,36 @@
                 </div>
                 <div id="earningsTable" class="mt-2"></div>
                 <ul id="searchWorkList" class="space-y-2 text-sm"></ul>
+                <div
+                  id="gsPager"
+                  class="flex items-center justify-between mt-3 text-xs"
+                >
+                  <div>
+                    <button
+                      id="gsPrev"
+                      class="px-2 py-1 rounded-2xl border bg-white disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      id="gsNext"
+                      class="px-2 py-1 rounded-2xl border bg-white disabled:opacity-40 ml-1"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span id="gsPageInfo" class="text-gray-600"></span>
+                    <select
+                      id="gsPageSize"
+                      class="border rounded-2xl px-2 py-1"
+                    >
+                      <option value="10" selected>10</option>
+                      <option value="25">25</option>
+                      <option value="50">50</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -537,6 +594,13 @@
               <button class="w-full bg-accent text-white rounded-2xl py-2">
                 Submit Work
               </button>
+              <button
+                id="openAdjustment"
+                type="button"
+                class="w-full mt-2 bg-gray-200 text-gray-800 rounded-2xl py-2"
+              >
+                Add Adjustment
+              </button>
             </form>
           </div>
 
@@ -572,9 +636,92 @@
                 </tfoot>
               </table>
             </div>
+            <div
+              id="histPager"
+              class="flex items-center justify-between mt-3 text-xs"
+            >
+              <div>
+                <button
+                  id="histPrev"
+                  class="px-2 py-1 rounded-2xl border bg-white disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <button
+                  id="histNext"
+                  class="px-2 py-1 rounded-2xl border bg-white disabled:opacity-40 ml-1"
+                >
+                  Next
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="histPageInfo" class="text-gray-600"></span>
+                <select id="histPageSize" class="border rounded-2xl px-2 py-1">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </section>
+
+      <!-- Adjustment Modal -->
+      <div
+        id="adjustmentModal"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50"
+      >
+        <div
+          class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-lg relative"
+        >
+          <h3 id="adjustmentModalTitle" class="text-lg font-semibold mb-3">
+            Add Adjustment
+          </h3>
+          <form id="adjustmentForm" class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1"
+                >Reason (optional)</label
+              >
+              <input
+                id="adjReason"
+                class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                placeholder="e.g., Bonus / Penalty"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1"
+                >Amount (prefix with - to deduct)</label
+              >
+              <input
+                id="adjAmount"
+                type="text"
+                class="w-full border border-gray-300 rounded-2xl px-4 py-2"
+                placeholder="e.g., 250 or -100"
+              />
+            </div>
+            <div class="flex gap-2 pt-2">
+              <button class="bg-accent text-white rounded-2xl px-4 py-2 flex-1">
+                Save
+              </button>
+              <button
+                type="button"
+                id="cancelAdjustment"
+                class="bg-gray-200 rounded-2xl px-4 py-2 flex-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+          <button
+            id="closeAdjustment"
+            class="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            type="button"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
     </div>
   </body>
   <script src="app.js"></script>

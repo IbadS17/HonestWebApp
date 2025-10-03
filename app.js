@@ -353,9 +353,16 @@ const woTableBody = $("#woTableBody");
 const woTotal = $("#woTotal");
 const woFilter = $("#woFilter");
 const clearWO = $("#clearWO");
+let woPage = 1;
+let woPageSize = 10;
+const woPrev = document.getElementById("woPrev");
+const woNext = document.getElementById("woNext");
+const woPageInfo = document.getElementById("woPageInfo");
+const woPageSizeSelect = document.getElementById("woPageSize");
+
 function renderWorkOverview() {
   const q = woFilter.value.trim().toLowerCase();
-  const rows = work
+  const enriched = work
     .map((wi) => ({
       ...wi,
       empName: employees.find((e) => e.id === wi.employeeId)?.name || "—",
@@ -370,30 +377,67 @@ function renderWorkOverview() {
         r.type.toLowerCase().includes(q)
     )
     .sort((a, b) => b.createdAt - a.createdAt);
+  // Reset page if current page beyond length
+  const totalRows = enriched.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / woPageSize));
+  if (woPage > totalPages) woPage = totalPages;
+  if (woPage < 1) woPage = 1;
+  const start = (woPage - 1) * woPageSize;
+  const pageRows = enriched.slice(start, start + woPageSize);
 
-  let total = 0;
-  woTableBody.innerHTML = rows
+  // Render rows
+  let pageTotal = 0;
+  woTableBody.innerHTML = pageRows
     .map((r) => {
-      total += r.amount;
-      return `
-        <tr class="border-b">
-          <td class="p-2">${formatDate(r.createdAt)}</td>
-          <td class="p-2">${r.empName}</td>
-          <td class="p-2">${r.billNo}</td>
-          <td class="p-2">${r.type}</td>
-          <td class="p-2 text-right">${fmt(r.qty)}</td>
-          <td class="p-2 text-right">${fmt(r.rate)}</td>
-          <td class="p-2 text-right">${fmt(r.amount)}</td>
-        </tr>`;
+      pageTotal += r.amount;
+      return `<tr class="border-b">
+        <td class="p-2">${formatDate(r.createdAt)}</td>
+        <td class="p-2">${r.empName}</td>
+        <td class="p-2">${r.billNo}</td>
+        <td class="p-2">${r.type}</td>
+        <td class="p-2 text-right">${fmt(r.qty)}</td>
+        <td class="p-2 text-right">${fmt(r.rate)}</td>
+        <td class="p-2 text-right">${fmt(r.amount)}</td>
+      </tr>`;
     })
     .join("");
-  woTotal.textContent = fmt(total);
+  // Overall total (not just page)
+  const overallTotal = enriched.reduce((sum, r) => sum + r.amount, 0);
+  woTotal.textContent = fmt(overallTotal);
+  // Page info
+  if (woPageInfo)
+    woPageInfo.textContent = `Page ${woPage} / ${totalPages} (${totalRows} rows)`;
+  if (woPrev) woPrev.disabled = woPage <= 1;
+  if (woNext) woNext.disabled = woPage >= totalPages;
 }
-woFilter.addEventListener("input", renderWorkOverview);
-clearWO.addEventListener("click", () => {
-  woFilter.value = "";
+
+woFilter.addEventListener("input", () => {
+  woPage = 1;
   renderWorkOverview();
 });
+clearWO.addEventListener("click", () => {
+  woFilter.value = "";
+  woPage = 1;
+  renderWorkOverview();
+});
+if (woPrev)
+  woPrev.addEventListener("click", () => {
+    if (woPage > 1) {
+      woPage--;
+      renderWorkOverview();
+    }
+  });
+if (woNext)
+  woNext.addEventListener("click", () => {
+    woPage++;
+    renderWorkOverview();
+  });
+if (woPageSizeSelect)
+  woPageSizeSelect.addEventListener("change", (e) => {
+    woPageSize = Number(e.target.value) || 10;
+    woPage = 1;
+    renderWorkOverview();
+  });
 
 // -------- Global Search (Admin) --------
 const globalSearch = $("#globalSearch");
@@ -479,9 +523,17 @@ if (weekFilter) {
   weekFilter.addEventListener("focus", populateWeekFilter);
 }
 
+let searchWorkPage = 1;
+let searchWorkPageSize = 10;
+const gsPrev = document.getElementById("gsPrev");
+const gsNext = document.getElementById("gsNext");
+const gsPageInfo = document.getElementById("gsPageInfo");
+const gsPageSize = document.getElementById("gsPageSize");
+
 function runGlobalSearch() {
   const q = globalSearch.value.trim().toLowerCase();
-  // employees by name/username
+  const selectedEmpIdLocal = selectedEmpId || "";
+  // employees
   const emps = employees.filter(
     (e) =>
       e.name.toLowerCase().includes(q) || e.username.toLowerCase().includes(q)
@@ -491,7 +543,7 @@ function runGlobalSearch() {
       (
         e
       ) => `<li class="flex items-center justify-between border rounded-2xl px-3 py-2 cursor-pointer emp-select${
-        selectedEmpId === e.id ? " bg-accent text-white" : ""
+        selectedEmpIdLocal === e.id ? " bg-accent text-white" : ""
       }" data-empid="${e.id}">
         <span class="emp-name">${e.name} <span class="text-xs text-gray-500">(${
         e.username
@@ -502,20 +554,26 @@ function runGlobalSearch() {
       </li>`
     )
     .join("");
-  // Add click listeners to employee items
   $$(".emp-select").forEach((el) => {
     el.addEventListener("click", () => {
       selectedEmpId = el.getAttribute("data-empid");
+      searchWorkPage = 1;
       runGlobalSearch();
     });
   });
-  // work by bill number
+  // work filtered
   let wres = work.filter((wi) => wi.billNo.toLowerCase().includes(q));
-  if (selectedEmpId) {
-    wres = wres.filter((wi) => wi.employeeId === selectedEmpId);
+  if (selectedEmpIdLocal) {
+    wres = wres.filter((wi) => wi.employeeId === selectedEmpIdLocal);
   }
   wres = wres.sort((a, b) => b.createdAt - a.createdAt);
-  searchWorkList.innerHTML = wres
+  const totalRows = wres.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / searchWorkPageSize));
+  if (searchWorkPage > totalPages) searchWorkPage = totalPages;
+  if (searchWorkPage < 1) searchWorkPage = 1;
+  const start = (searchWorkPage - 1) * searchWorkPageSize;
+  const pageRows = wres.slice(start, start + searchWorkPageSize);
+  searchWorkList.innerHTML = pageRows
     .map(
       (
         r
@@ -527,14 +585,42 @@ function runGlobalSearch() {
       </li>`
     )
     .join("");
+  if (gsPageInfo)
+    gsPageInfo.textContent = `Page ${searchWorkPage} / ${totalPages} (${totalRows} bills)`;
+  if (gsPrev) gsPrev.disabled = searchWorkPage <= 1;
+  if (gsNext) gsNext.disabled = searchWorkPage >= totalPages;
 }
-if (clearEmpFilter) {
-  clearEmpFilter.addEventListener("click", () => {
-    selectedEmpId = "";
+
+if (gsPrev)
+  gsPrev.addEventListener("click", () => {
+    if (searchWorkPage > 1) {
+      searchWorkPage--;
+      runGlobalSearch();
+    }
+  });
+if (gsNext)
+  gsNext.addEventListener("click", () => {
+    searchWorkPage++;
     runGlobalSearch();
   });
-}
-globalSearch.addEventListener("input", runGlobalSearch);
+if (gsPageSize)
+  gsPageSize.addEventListener("change", (e) => {
+    searchWorkPageSize = Number(e.target.value) || 10;
+    searchWorkPage = 1;
+    runGlobalSearch();
+  });
+// Reset page on global search input
+if (globalSearch)
+  globalSearch.addEventListener("input", () => {
+    searchWorkPage = 1;
+    runGlobalSearch();
+  });
+if (clearEmpFilter)
+  clearEmpFilter.addEventListener("click", () => {
+    selectedEmpId = "";
+    searchWorkPage = 1;
+    runGlobalSearch();
+  });
 
 // -------- Employee Panel --------
 const empWelcome = $("#empWelcome");
@@ -617,38 +703,232 @@ $("#workForm").addEventListener("submit", async (e) => {
 
 $("#refreshHistory").addEventListener("click", renderHistory);
 
+let histPage = 1;
+let histPageSize = 10;
+const histPrev = document.getElementById("histPrev");
+const histNext = document.getElementById("histNext");
+const histPageInfo = document.getElementById("histPageInfo");
+const histPageSizeSelect = document.getElementById("histPageSize");
+
 async function renderHistory() {
-  const tbody = $("#histTableBody");
-  const totalCell = $("#histTotal");
+  const tbody = document.getElementById("histTableBody");
+  const totalCell = document.getElementById("histTotal");
   const em = currentEmployee();
   if (!em) return;
   await loadWork();
-  console.log("Current employee id:", em.id);
-  work.forEach((wi) =>
-    console.log("Work employeeId:", wi.employeeId, "Bill:", wi.billNo)
-  );
-  // For debugging, show all work for current employee
-  const rows = work
-    .filter((wi) => wi.employeeId == em.id) // use == for loose match
+  const rowsAll = work
+    .filter((wi) => wi.employeeId == em.id)
     .sort(
       (a, b) =>
         normalizeCreatedAt(b.createdAt) - normalizeCreatedAt(a.createdAt)
     );
-  let total = 0;
-  tbody.innerHTML = rows
+  const totalOverall = rowsAll.reduce((sum, r) => sum + r.amount, 0);
+  // Pagination calculations
+  const totalRows = rowsAll.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / histPageSize));
+  if (histPage > totalPages) histPage = totalPages;
+  if (histPage < 1) histPage = 1;
+  const start = (histPage - 1) * histPageSize;
+  const pageRows = rowsAll.slice(start, start + histPageSize);
+  // Render page rows
+  let pageTotal = 0;
+  tbody.innerHTML = pageRows
     .map((r) => {
-      total += r.amount;
-      return `
-        <tr class="border-b">
-          <td class="p-2">${formatDate(normalizeCreatedAt(r.createdAt))}</td>
-          <td class="p-2">${r.billNo}</td>
-          <td class="p-2">${r.type}</td>
-          <td class="p-2 text-right">${fmt(r.qty)}</td>
-          <td class="p-2 text-right">${fmt(r.amount)}</td>
-        </tr>`;
+      pageTotal += r.amount;
+      const isAdj = r.isAdjustment;
+      const amtClass = isAdj
+        ? r.amount < 0
+          ? "text-red-600 font-semibold"
+          : "text-green-600 font-semibold"
+        : "";
+      const actionBtns = isAdj
+        ? `<div class='flex gap-1 ml-2'>
+            <button data-edit-adj="${r.id}" class="px-2 py-0.5 text-xs rounded-2xl bg-gray-200">Edit</button>
+            <button data-del-adj="${r.id}" class="px-2 py-0.5 text-xs rounded-2xl bg-red-500 text-white">Del</button>
+          </div>`
+        : "";
+      return `<tr class="border-b ${isAdj ? "bg-yellow-50" : ""}">
+        <td class="p-2">${formatDate(normalizeCreatedAt(r.createdAt))}</td>
+        <td class="p-2">${r.billNo}</td>
+        <td class="p-2">${r.type}${isAdj ? " (Adj)" : ""}</td>
+        <td class="p-2 text-right">${fmt(r.qty)}</td>
+        <td class="p-2 text-right ${amtClass}">${fmt(
+        r.amount
+      )}${actionBtns}</td>
+      </tr>`;
     })
     .join("");
-  totalCell.textContent = fmt(total);
+  // Bind adjustment action buttons
+  tbody.querySelectorAll("[data-edit-adj]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-edit-adj");
+      editAdjustment(id);
+    });
+  });
+  tbody.querySelectorAll("[data-del-adj]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-del-adj");
+      deleteAdjustment(id);
+    });
+  });
+  totalCell.textContent = fmt(totalOverall);
+  if (histPageInfo)
+    histPageInfo.textContent = `Page ${histPage} / ${totalPages} (${totalRows} entries)`;
+  if (histPrev) histPrev.disabled = histPage <= 1;
+  if (histNext) histNext.disabled = histPage >= totalPages;
+}
+if (histPrev)
+  histPrev.addEventListener("click", () => {
+    if (histPage > 1) {
+      histPage--;
+      renderHistory();
+    }
+  });
+if (histNext)
+  histNext.addEventListener("click", () => {
+    histPage++;
+    renderHistory();
+  });
+if (histPageSizeSelect)
+  histPageSizeSelect.addEventListener("change", (e) => {
+    histPageSize = Number(e.target.value) || 10;
+    histPage = 1;
+    renderHistory();
+  });
+
+// -------- Adjustment Modal Logic --------
+const adjustmentModal = document.getElementById("adjustmentModal");
+const openAdjustment = document.getElementById("openAdjustment");
+const closeAdjustment = document.getElementById("closeAdjustment");
+const cancelAdjustment = document.getElementById("cancelAdjustment");
+const adjustmentForm = document.getElementById("adjustmentForm");
+const adjReason = document.getElementById("adjReason");
+const adjAmount = document.getElementById("adjAmount");
+const adjustmentModalTitle = document.getElementById("adjustmentModalTitle");
+
+// Editing state for adjustments
+let editingAdjustmentId = null;
+function resetAdjustmentEditingState() {
+  editingAdjustmentId = null;
+  if (adjustmentModalTitle) adjustmentModalTitle.textContent = "Add Adjustment";
+}
+
+function showAdjustment(open = true) {
+  if (!adjustmentModal) return;
+  if (open) {
+    adjustmentModal.classList.remove("hidden");
+    adjustmentModal.classList.add("flex");
+    setTimeout(() => adjReason && adjReason.focus(), 10);
+  } else {
+    adjustmentModal.classList.add("hidden");
+    adjustmentModal.classList.remove("flex");
+    adjustmentForm?.reset();
+    resetAdjustmentEditingState();
+  }
+}
+openAdjustment?.addEventListener("click", () => showAdjustment(true));
+closeAdjustment?.addEventListener("click", () => showAdjustment(false));
+cancelAdjustment?.addEventListener("click", () => showAdjustment(false));
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !adjustmentModal.classList.contains("hidden"))
+    showAdjustment(false);
+});
+
+adjustmentForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const em = currentEmployee();
+  if (!em) return showToast("Not logged in", "error");
+  let raw = (adjAmount.value || "").trim();
+  if (!raw) {
+    showToast("Amount required", "error");
+    return;
+  }
+  // Determine sign
+  let sign = 1;
+  if (raw.startsWith("-")) {
+    sign = -1;
+    raw = raw.substring(1).trim();
+  }
+  // Remove + if present
+  if (raw.startsWith("+")) raw = raw.substring(1).trim();
+  const numeric = Number(raw);
+  if (isNaN(numeric) || numeric <= 0) {
+    showToast("Enter a valid positive number", "error");
+    return;
+  }
+  const finalAmount = numeric * sign;
+  const reason = (adjReason.value || "").trim() || "Adjustment";
+  // Confirm negative adjustments
+  if (finalAmount < 0) {
+    const proceed = confirm(
+      `This will deduct ${Math.abs(finalAmount)} from your total. Continue?`
+    );
+    if (!proceed) return;
+  }
+  if (editingAdjustmentId) {
+    try {
+      await db.collection("work").doc(editingAdjustmentId).update({
+        type: reason,
+        rate: finalAmount,
+        amount: finalAmount,
+      });
+      showToast("Adjustment updated", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update adjustment", "error");
+      return;
+    }
+  } else {
+    // Store as a work entry with a special type and billNo pattern
+    await db.collection("work").add({
+      employeeId: em.id,
+      billNo: "ADJ-" + Date.now(),
+      type: reason,
+      qty: 1,
+      rate: finalAmount, // store raw adjustment in rate field for reference
+      amount: finalAmount,
+      createdAt: Date.now(),
+      isAdjustment: true,
+    });
+    showToast("Adjustment saved", "success");
+  }
+  showAdjustment(false);
+  renderHistory();
+  renderWorkOverview();
+  runGlobalSearch();
+});
+
+async function editAdjustment(id) {
+  try {
+    const doc = await db.collection("work").doc(id).get();
+    if (!doc.exists) return showToast("Adjustment not found", "error");
+    const data = doc.data();
+    if (!data.isAdjustment) return showToast("Not an adjustment", "error");
+    editingAdjustmentId = id;
+    if (adjustmentModalTitle)
+      adjustmentModalTitle.textContent = "Edit Adjustment";
+    if (adjReason) adjReason.value = data.type || "Adjustment";
+    if (adjAmount) adjAmount.value = data.amount; // negative preserved automatically
+    showAdjustment(true);
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to load adjustment", "error");
+  }
+}
+
+async function deleteAdjustment(id) {
+  if (!confirm("Delete this adjustment?")) return;
+  try {
+    await db.collection("work").doc(id).delete();
+    showToast("Adjustment deleted", "success");
+    renderHistory();
+    renderWorkOverview();
+    runGlobalSearch();
+  } catch (err) {
+    console.error(err);
+    showToast("Delete failed", "error");
+  }
 }
 
 // -------- Render Root --------
@@ -706,3 +986,85 @@ employeeView.classList.add("hidden");
 
 // Ensure app loads and renders correct view on page load
 initApp();
+
+// Keyboard shortcuts for pagination
+window.addEventListener("keydown", (e) => {
+  const overviewTabActive =
+    document.getElementById("tab-overview") &&
+    !document.getElementById("tab-overview").classList.contains("hidden");
+  const searchTabActive =
+    document.getElementById("tab-search") &&
+    !document.getElementById("tab-search").classList.contains("hidden");
+  const employeeViewActive =
+    document.getElementById("employeeView") &&
+    !document.getElementById("employeeView").classList.contains("hidden");
+  if (!overviewTabActive && !searchTabActive && !employeeViewActive) return;
+  if (e.target && ["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName))
+    return;
+  if (e.key === "ArrowLeft") {
+    if (overviewTabActive && woPage > 1) {
+      woPage--;
+      renderWorkOverview();
+    }
+    if (searchTabActive && searchWorkPage > 1) {
+      searchWorkPage--;
+      runGlobalSearch();
+    }
+    if (employeeViewActive && histPage > 1) {
+      histPage--;
+      renderHistory();
+    }
+  } else if (e.key === "ArrowRight") {
+    if (overviewTabActive) {
+      const q = woFilter.value.trim().toLowerCase();
+      const totalPages = Math.max(
+        1,
+        Math.ceil(
+          work.filter((wi) => {
+            const empName = (
+              employees.find((e) => e.id === wi.employeeId)?.name || ""
+            ).toLowerCase();
+            return (
+              !q ||
+              empName.includes(q) ||
+              wi.billNo.toLowerCase().includes(q) ||
+              wi.type.toLowerCase().includes(q)
+            );
+          }).length / woPageSize
+        )
+      );
+      if (woPage < totalPages) {
+        woPage++;
+        renderWorkOverview();
+      }
+    }
+    if (searchTabActive) {
+      const q2 = globalSearch.value.trim().toLowerCase();
+      let wres = work.filter((wi) => wi.billNo.toLowerCase().includes(q2));
+      if (selectedEmpId)
+        wres = wres.filter((wi) => wi.employeeId === selectedEmpId);
+      const totalPages2 = Math.max(
+        1,
+        Math.ceil(wres.length / searchWorkPageSize)
+      );
+      if (searchWorkPage < totalPages2) {
+        searchWorkPage++;
+        runGlobalSearch();
+      }
+    }
+    if (employeeViewActive) {
+      const em = currentEmployee();
+      if (em) {
+        const rowsAll = work.filter((wi) => wi.employeeId == em.id);
+        const totalPagesH = Math.max(
+          1,
+          Math.ceil(rowsAll.length / histPageSize)
+        );
+        if (histPage < totalPagesH) {
+          histPage++;
+          renderHistory();
+        }
+      }
+    }
+  }
+});
